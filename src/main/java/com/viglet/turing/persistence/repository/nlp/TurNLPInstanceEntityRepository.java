@@ -4,13 +4,14 @@ import com.viglet.turing.persistence.model.nlp.TurNLPInstance;
 import com.viglet.turing.persistence.model.nlp.TurNLPInstanceEntity;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 public interface TurNLPInstanceEntityRepository
-		extends JpaRepository<TurNLPInstanceEntity, Integer> {
+		extends JpaRepository<TurNLPInstanceEntity, String> {
 
 	List<TurNLPInstanceEntity> findAll();
 
@@ -27,7 +28,7 @@ public interface TurNLPInstanceEntityRepository
 		return findByTurNLPInstanceAndLanguageAndEnabled(turNLPInstance, turNLPInstance.getLanguage(), enabled);
 	}
 
-	TurNLPInstanceEntity findById(int id);
+	Optional<TurNLPInstanceEntity> findById(String id);
 
 	TurNLPInstanceEntity save(TurNLPInstanceEntity turNLPInstanceEntity);
 

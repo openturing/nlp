@@ -3,14 +3,15 @@ package com.viglet.turing.persistence.repository.nlp;
 import com.viglet.turing.persistence.model.nlp.TurNLPEntity;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface TurNLPEntityRepository extends JpaRepository<TurNLPEntity, Integer> {
+public interface TurNLPEntityRepository extends JpaRepository<TurNLPEntity, String> {
 
 	List<TurNLPEntity> findAll();
 
-	TurNLPEntity findById(int id);
+	Optional<TurNLPEntity> findById(String id);
 
 	TurNLPEntity findByInternalName(String internalName);
 	

@@ -2,6 +2,7 @@ package com.viglet.turing.nlp;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.servlet.ServletContext;
 
@@ -44,9 +45,9 @@ public class TurNLP {
 	TurNLPVendor turNLPVendor = null;
 
 	public void init() {
-		TurNLPInstance turNLPInstance = turNLPInstanceRepository
-				.findById(Integer.parseInt(turConfigVarRepository.findById("DEFAULT_NLP").get().getValue()));
-		this.init(turNLPInstance);
+		Optional<TurNLPInstance> turNLPInstance = turNLPInstanceRepository
+				.findById(turConfigVarRepository.findById("DEFAULT_NLP").get().getValue());
+		this.init(turNLPInstance.get());
 
 	}
 

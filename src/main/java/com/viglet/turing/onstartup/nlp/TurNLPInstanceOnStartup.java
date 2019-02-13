@@ -45,7 +45,7 @@ public class TurNLPInstanceOnStartup {
 
 				turConfigVar.setId("DEFAULT_NLP");
 				turConfigVar.setPath("/nlp");
-				turConfigVar.setValue(Integer.toString(turNLPInstance.getId()));
+				turConfigVar.setValue(turNLPInstance.getId());
 				turConfigVarRepository.save(turConfigVar);
 				
 				turNLPInstance = new TurNLPInstance();

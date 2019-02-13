@@ -44,14 +44,14 @@ public class TurNLPInstanceAPI {
 
 	@ApiOperation(value = "Show a Natural Language Processing")
 	@GetMapping("/{id}")
-	public TurNLPInstance turNLPInstanceGet(@PathVariable int id) throws JSONException {
-		return this.turNLPInstanceRepository.findById(id);
+	public TurNLPInstance turNLPInstanceGet(@PathVariable String id) throws JSONException {
+		return this.turNLPInstanceRepository.findById(id).get();
 	}
 
 	@ApiOperation(value = "Update a Natural Language Processing")
 	@PutMapping("/{id}")
-	public TurNLPInstance turNLPInstanceUpdate(@PathVariable int id, @RequestBody TurNLPInstance turNLPInstance) throws Exception {
-		TurNLPInstance turNLPInstanceEdit = turNLPInstanceRepository.findById(id);
+	public TurNLPInstance turNLPInstanceUpdate(@PathVariable String id, @RequestBody TurNLPInstance turNLPInstance) throws Exception {
+		TurNLPInstance turNLPInstanceEdit = turNLPInstanceRepository.findById(id).get();
 		turNLPInstanceEdit.setTitle(turNLPInstance.getTitle());
 		turNLPInstanceEdit.setDescription(turNLPInstance.getDescription());
 		turNLPInstanceEdit.setTurNLPVendor(turNLPInstance.getTurNLPVendor());
@@ -66,7 +66,7 @@ public class TurNLPInstanceAPI {
 	@Transactional
 	@ApiOperation(value = "Delete a Natural Language Processing")
 	@DeleteMapping("/{id}")
-	public boolean turNLPInstanceDelete(@PathVariable int id) throws Exception {
+	public boolean turNLPInstanceDelete(@PathVariable String id) throws Exception {
 		this.turNLPInstanceRepository.delete(id);
 		return true;
 	}
@@ -81,9 +81,9 @@ public class TurNLPInstanceAPI {
 
 	@SuppressWarnings("unchecked")
 	@PostMapping("/{id}/validate")
-	public TurNLPValidateResponse validate(@PathVariable int id, @RequestBody TurNLPTextValidate textValidate) throws JSONException {
+	public TurNLPValidateResponse validate(@PathVariable String id, @RequestBody TurNLPTextValidate textValidate) throws JSONException {
 		
-		TurNLPInstance turNLPInstance = this.turNLPInstanceRepository.findById(id);
+		TurNLPInstance turNLPInstance = this.turNLPInstanceRepository.findById(id).get();
 		turNLP.startup(turNLPInstance, textValidate.getText());
 		TurNLPValidateResponse turNLPValidateResponse = new TurNLPValidateResponse();
 		turNLPValidateResponse.setVendor(turNLPInstance.getTurNLPVendor().getTitle());

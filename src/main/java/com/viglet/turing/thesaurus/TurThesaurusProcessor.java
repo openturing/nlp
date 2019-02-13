@@ -47,7 +47,7 @@ public class TurThesaurusProcessor {
 	
 	LinkedHashMap<String, List<String>> entityResults = new LinkedHashMap<String, List<String>>();
 
-	LinkedHashMap<Integer, TurTermVariation> terms = new LinkedHashMap<Integer, TurTermVariation>();
+	LinkedHashMap<String, TurTermVariation> terms = new LinkedHashMap<String, TurTermVariation>();
 
 	public void startup() {
 		List<TurTermVariation> turTermVariations = turTermVariationRepository.findAll();
@@ -90,7 +90,7 @@ public class TurThesaurusProcessor {
 		int[] idx = { 0 };
 		Arrays.stream(words).forEach(w -> turNLPSentence.addWord(new TurNLPWord(w, idx[0]++)));
 
-		LinkedHashMap<String, LinkedHashMap<Integer, TurTermVariation>> lhWords = new LinkedHashMap<String, LinkedHashMap<Integer, TurTermVariation>>();
+		LinkedHashMap<String, LinkedHashMap<String, TurTermVariation>> lhWords = new LinkedHashMap<String, LinkedHashMap<String, TurTermVariation>>();
 		TurTermVariation[] stringTerms = terms.values().toArray(new TurTermVariation[terms.size()]);
 
 		for (String word : words) {
@@ -99,20 +99,20 @@ public class TurThesaurusProcessor {
 			List<TurTermVariation> results = (List<TurTermVariation>) Arrays.stream(stringTerms)
 					.filter(t -> t.getNameLower().contains(wordLowerCase)).collect(Collectors.toList());
 
-			LinkedHashMap<Integer, TurTermVariation> hmResults = new LinkedHashMap<Integer, TurTermVariation>();
+			LinkedHashMap<String, TurTermVariation> hmResults = new LinkedHashMap<String, TurTermVariation>();
 			Arrays.stream(results.toArray())
 					.forEach(r -> hmResults.put(((TurTermVariation) r).getId(), (TurTermVariation) r));
 			logger.debug("hmResults.size():" + hmResults.size());
 			lhWords.put(wordLowerCase, hmResults);
 		}
 
-		LinkedHashMap<TurNLPListKey<Integer>, List<Integer>> matches = new LinkedHashMap<TurNLPListKey<Integer>, List<Integer>>();
+		LinkedHashMap<TurNLPListKey<Integer>, List<String>> matches = new LinkedHashMap<TurNLPListKey<Integer>, List<String>>();
 		TurNLPWord turNLPWordPrev = null;
-		LinkedHashMap<Integer, TurTermVariation> prevVariations = null;
+		LinkedHashMap<String, TurTermVariation> prevVariations = null;
 		for (Object wordObject : turNLPSentence.getWords().values().toArray()) {
 			TurNLPWord turNLPWord = (TurNLPWord) wordObject;
 			logger.debug("word2: " + turNLPWord.getWord());
-			LinkedHashMap<Integer, TurTermVariation> variations = lhWords
+			LinkedHashMap<String, TurTermVariation> variations = lhWords
 					.get(turUtils.stripAccents(turNLPWord.getWord()).toLowerCase());
 
 			if (prevVariations != null) {
@@ -166,7 +166,7 @@ public class TurThesaurusProcessor {
 						TurNLPListKey<Integer> positions = new TurNLPListKey<Integer>(positionArr);
 
 						if (!matches.containsKey(positions)) {
-							List<Integer> matchArray = new ArrayList<Integer>();
+							List<String> matchArray = new ArrayList<String>();
 							matchArray.add(variation.getId());
 							matches.put(positions, matchArray);
 						} else {
@@ -180,7 +180,7 @@ public class TurThesaurusProcessor {
 
 			turNLPWordPrev = turNLPWord;
 			prevVariations = variations;
-			for (Integer prevariation : prevVariations.keySet()) {
+			for (String prevariation : prevVariations.keySet()) {
 				logger.debug("prevariation key:" + prevariation);
 			}
 		}
@@ -192,7 +192,7 @@ public class TurThesaurusProcessor {
 			Map.Entry pair = (Map.Entry) it.next();
 
 			ArrayList<Integer> positions = ((TurNLPListKey<Integer>) pair.getKey()).getList();
-			List<Integer> ids = (List<Integer>) pair.getValue();
+			List<String> ids = (List<String>) pair.getValue();
 			returnList.addAll(this.checkTermIdBetweenPositions(turNLPSentence, positions, ids, matches));
 
 		}
@@ -201,7 +201,7 @@ public class TurThesaurusProcessor {
 	}
 
 	public List<String> checkTermIdBetweenPositions(TurNLPSentence turNLPSentence, ArrayList<Integer> positions,
-			List<Integer> ids, LinkedHashMap<TurNLPListKey<Integer>, List<Integer>> matches) {
+			List<String> ids, LinkedHashMap<TurNLPListKey<Integer>, List<String>> matches) {
 		List<String> returnList = new ArrayList<String>();
 		logger.debug("Current Positions: " + positions.toString());
 		if ((positions.get(0).intValue() > 0) && (ids.size() > 0)) {
@@ -215,9 +215,9 @@ public class TurThesaurusProcessor {
 			TurNLPListKey<Integer> positionsPrev = new TurNLPListKey<Integer>(positionPrevArr);
 			logger.debug("PositionPrev ... " + positionsPrev.toString());
 			if (matches.containsKey(positionsPrev)) {
-				List<Integer> filteredIds = new ArrayList<Integer>();
+				List<String> filteredIds = new ArrayList<String>();
 				logger.debug("Contains PositionPrev ... " + positionsPrev.toString());
-				for (Integer id : ids) {
+				for (String id : ids) {
 					if (matches.containsKey(positionsPrev) && matches.get(positionsPrev).contains(id)) {
 						logger.debug("Between matches found:" + positionsPrev.toString() + "|" + positions.toString()
 								+ ":" + id);
