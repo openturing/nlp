@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.Logger;
@@ -44,8 +45,9 @@ public class TurThesaurusProcessor {
 	TurSolrField turSolrField;
 	@Autowired
 	TurUtils turUtils;
-	
-	LinkedHashMap<String, List<String>> entityResults = new LinkedHashMap<String, List<String>>();
+
+	// LinkedHashMap<String, List<String>> entityResults = new LinkedHashMap<String,
+	// List<String>>();
 
 	LinkedHashMap<String, TurTermVariation> terms = new LinkedHashMap<String, TurTermVariation>();
 
@@ -66,9 +68,13 @@ public class TurThesaurusProcessor {
 				LinkedHashMap<String, List<String>> termsDetected = this
 						.detectTerms(turSolrField.convertFieldToString(attrValue));
 				for (Entry<String, List<String>> termDetected : termsDetected.entrySet()) {
-					if (entityResults.containsKey(termDetected.getKey())) {
-						entityResults.get(termDetected.getKey())
-								.add(turSolrField.convertFieldToString(termDetected.getValue()));
+					if (entityResults.containsKey(String.format("turing_entity_%s", termDetected.getKey()))) {
+						entityResults.get(String.format("turing_entity_%s", termDetected.getKey()))
+								.addAll(termDetected.getValue());
+					} else {
+						List<String> terms = new ArrayList<String>();
+						terms.addAll(termDetected.getValue());
+						entityResults.put(String.format("turing_entity_%s", termDetected.getKey()), terms);
 					}
 
 				}
@@ -82,7 +88,8 @@ public class TurThesaurusProcessor {
 		return entityObjectResults;
 	}
 
-	public LinkedHashMap<String, List<String>> detectTerms(String text) {
+	public TurEntityResults detectTerms(String text) {
+		TurEntityResults entityResults = new TurEntityResults();
 		logger.debug("detectTerms....");
 		String[] words = turUtils.removeDuplicateWhiteSpaces(text).split(" ");
 		TurNLPSentence turNLPSentence = new TurNLPSentence();
@@ -126,14 +133,23 @@ public class TurThesaurusProcessor {
 						logger.debug("Single Term was validaded: " + turNLPWord.getWord());
 						TurNLPEntity turNLPEntity = this.getEntity(variation);
 						if (turNLPEntity != null) {
+							logger.debug("turNLPEntity: " + turNLPEntity.getName());
 							if (!entityResults.containsKey(turNLPEntity.getCollectionName())) {
+								logger.debug(
+										"First Item into collection for results: " + turNLPEntity.getCollectionName());
 								List<String> lstTerm = new ArrayList<String>();
 								lstTerm.add(variation.getName());
 								entityResults.put(turNLPEntity.getCollectionName(), lstTerm);
 							} else {
+								logger.debug(
+										"Contains the collection for results: " + turNLPEntity.getCollectionName());
 								entityResults.get(turNLPEntity.getCollectionName()).add(variation.getName());
 							}
-							this.getParentTerm(variation.getTurTerm());
+
+							mergeEntityResultsFromTo(this.getParentTerm(variation.getTurTerm()), entityResults);
+							logger.debug("prevVariations not null, entityResults.size(): " + entityResults.size());
+						} else {
+							logger.debug("turNLPEntity is null");
 						}
 
 					} else {
@@ -155,7 +171,8 @@ public class TurThesaurusProcessor {
 								} else {
 									entityResults.get(turNLPEntity.getCollectionName()).add(variation.getName());
 								}
-								this.getParentTerm(variation.getTurTerm());
+								mergeEntityResultsFromTo(this.getParentTerm(variation.getTurTerm()), entityResults);
+								logger.debug("prevVariations, entityResults.size(): " + entityResults.size());
 							}
 						}
 
@@ -187,22 +204,25 @@ public class TurThesaurusProcessor {
 		logger.debug("Matches...");
 
 		Iterator<?> it = matches.entrySet().iterator();
-		List<String> returnList = new ArrayList<String>();
 		while (it.hasNext()) {
 			Map.Entry pair = (Map.Entry) it.next();
-
 			ArrayList<Integer> positions = ((TurNLPListKey<Integer>) pair.getKey()).getList();
 			List<String> ids = (List<String>) pair.getValue();
-			returnList.addAll(this.checkTermIdBetweenPositions(turNLPSentence, positions, ids, matches));
-
+			this.mergeEntityResultsFromTo(this.checkTermIdBetweenPositions(turNLPSentence, positions, ids, matches),
+					entityResults);
 		}
 
+		logger.debug("entityResults.size(): " + entityResults.size());
+		for (Entry<String, List<String>> entry : entityResults.entrySet()) {
+			logger.debug("entityREsults entry Key: " + entry.getKey());
+			logger.debug("entityREsults entry Value: " + entry.getValue());
+		}
 		return entityResults;
 	}
 
-	public List<String> checkTermIdBetweenPositions(TurNLPSentence turNLPSentence, ArrayList<Integer> positions,
+	public TurEntityResults checkTermIdBetweenPositions(TurNLPSentence turNLPSentence, ArrayList<Integer> positions,
 			List<String> ids, LinkedHashMap<TurNLPListKey<Integer>, List<String>> matches) {
-		List<String> returnList = new ArrayList<String>();
+		TurEntityResults entityResults = new TurEntityResults();
 		logger.debug("Current Positions: " + positions.toString());
 		if ((positions.get(0).intValue() > 0) && (ids.size() > 0)) {
 			logger.debug("Brief Matches...");
@@ -230,8 +250,17 @@ public class TurThesaurusProcessor {
 						logger.debug("Compare " + wordMatched.toString() + " : " + terms.get(id).getNameLower());
 						if (validateTerm(wordMatched.toString(), terms.get(id))) {
 							logger.debug("Match Found");
-							this.getParentTerm(terms.get(id).getTurTerm());
-							returnList.add(wordMatched.toString() + " -> " + this.getEntity(terms.get(id)).getName());
+							String entity = this.getEntity(terms.get(id)).getName().toLowerCase();
+							this.mergeEntityResultsFromTo(this.getParentTerm(terms.get(id).getTurTerm()),
+									entityResults);
+							if (entityResults.containsKey(entity)) {
+								entityResults.get(entity).add(wordMatched.toString());
+							} else {
+								List<String> values = new ArrayList<String>();
+								values.add(wordMatched.toString());
+								entityResults.put(entity, values);
+							}
+
 						} else {
 							logger.debug("Match doesn't Found");
 						}
@@ -239,9 +268,9 @@ public class TurThesaurusProcessor {
 					ArrayList<Integer> positionCurrArr = new ArrayList<Integer>();
 					positionCurrArr.add(positions.get(0) - 1);
 					positionCurrArr.addAll(positions);
-
-					returnList.addAll(
-							this.checkTermIdBetweenPositions(turNLPSentence, positionCurrArr, filteredIds, matches));
+					this.mergeEntityResultsFromTo(
+							this.checkTermIdBetweenPositions(turNLPSentence, positionCurrArr, filteredIds, matches),
+							entityResults);
 				}
 			} else {
 				logger.debug("Not Contains PositionPrev ... " + positionsPrev.toString());
@@ -249,34 +278,64 @@ public class TurThesaurusProcessor {
 		} else {
 			logger.debug("End. First Position or Empty Ids");
 		}
-		return returnList;
+		return entityResults;
 	}
 
-	public TurTerm getParentTerm(TurTerm turTerm) {
+	private TurEntityResults mergeEntityResultsFromTo(TurEntityResults from, TurEntityResults to) {
+		logger.debug("mergeEntity From Size: " + from.size());
+		logger.debug("mergeEntity To Size Before: " + to.size());
+		Set<Entry<String, List<String>>> fromEntries = from.entrySet();
+		for (Entry<String, List<String>> fromEntry : fromEntries) {
+			if (to.containsKey(fromEntry.getKey())) {
+				logger.debug("mergeEntity Contains");
+				logger.debug("mergeEntity To Before: " + to.get(fromEntry.getKey()).toString());
+				logger.debug("mergeEntity From: " + fromEntry.getValue());
+				to.get(fromEntry.getKey()).addAll(fromEntry.getValue());
+				logger.debug("mergeEntity To After: " + to.get(fromEntry.getKey()).toString());
+			} else {
+				logger.debug("mergeEntity Not Contains");
+				List<String> values = new ArrayList<String>();
+				values.addAll(fromEntry.getValue());
+				to.put(fromEntry.getKey(), values);
+			}
+		}
+		logger.debug("mergeEntity To Size After: " + to.size());
+		return to;
+	}
+
+	public TurEntityResults getParentTerm(TurTerm turTerm) {
+		TurEntityResults entityResults = new TurEntityResults();
 		logger.debug("getParentTerm() from " + turTerm.getName());
 		for (TurTermRelationFrom relationFrom : turTerm.getTurTermRelationFroms()) {
-			logger.debug("getParentTerm() relationFrom Id" + relationFrom.getId());
+			logger.debug("getParentTerm() relationFrom Id: " + relationFrom.getId());
 			if (relationFrom.getRelationType() == TurNLPRelationType.BT.id()) {
 				logger.debug("getParentTerm() is BT");
 				for (TurTermRelationTo relationTo : relationFrom.getTurTermRelationTos()) {
 					logger.debug("getParentTerm() relationTo Id" + relationTo.getId());
 					TurTerm parentTerm = relationTo.getTurTerm();
 					logger.debug("Parent Term is " + parentTerm.getName());
-					if (entityResults.containsKey(parentTerm.getTurNLPEntity().getCollectionName())) {
-						entityResults.get(parentTerm.getTurNLPEntity().getCollectionName()).add(parentTerm.getName());
+					String parentCollection = parentTerm.getTurNLPEntity().getCollectionName();
+					if (entityResults.containsKey(parentCollection)) {
+						logger.debug("Parent Term Collection: " + parentCollection);
+						logger.debug(
+								"Parent Term Collection size before: " + entityResults.get(parentCollection).size());
+						entityResults.get(parentCollection).add(parentTerm.getName());
+						logger.debug(
+								"Parent Term Collection size after: " + entityResults.get(parentCollection).size());
 					} else {
+						logger.debug("Parent Term Collection is new: " + parentCollection);
 						List<String> lstTerm = new ArrayList<String>();
 						lstTerm.add(parentTerm.getName());
-						entityResults.put(parentTerm.getTurNLPEntity().getCollectionName(), lstTerm);
+						entityResults.put(parentCollection, lstTerm);
+						logger.debug("Parent Term Collection size: " + entityResults.get(parentCollection).size());
 					}
-
-					this.getParentTerm(relationTo.getTurTerm());
-					return relationTo.getTurTerm();
+					mergeEntityResultsFromTo(this.getParentTerm(relationTo.getTurTerm()), entityResults);
 				}
 			}
 		}
 		logger.debug("Parent Term not found");
-		return null;
+		return entityResults;
+
 	}
 
 	public TurNLPEntity getEntity(TurTermVariation variation) {
