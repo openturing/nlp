@@ -11,8 +11,6 @@ import javax.xml.transform.TransformerException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -83,13 +81,13 @@ public class TurOpenNLPConnector implements TurNLPImpl {
 		return this.getAttributes();
 	}
 
-	public Map<String, Object> getAttributes() throws JSONException {
+	public Map<String, Object> getAttributes() {
 		Map<String, Object> entityAttributes = new HashMap<String, Object>();
 
 		for (TurNLPInstanceEntity nlpInstanceEntity : nlpInstanceEntities) {
 			logger.debug("TurNLPInstanceEntity : " + nlpInstanceEntity.getName());
 
-			if (this.getEntity(nlpInstanceEntity.getName()).length() > 0) {
+			if (this.getEntity(nlpInstanceEntity.getName()).size() > 0) {
 				entityAttributes.put(nlpInstanceEntity.getTurNLPEntity().getInternalName(),
 						this.getEntity(nlpInstanceEntity.getName()));
 			}
@@ -98,9 +96,9 @@ public class TurOpenNLPConnector implements TurNLPImpl {
 		return entityAttributes;
 	}
 
-	public JSONArray getEntity(String entityPath) {
+	public List<String> getEntity(String entityPath) {
 		NameFinderME nameFinder = null;
-		JSONArray jsonEntity = new JSONArray();
+		List<String> entities = new ArrayList<String>();
 
 		if (openNLPModelManager.exists(entityPath)) {
 			logger.debug("Loading OpenNLP Entity: " + entityPath);
@@ -130,10 +128,10 @@ public class TurOpenNLPConnector implements TurNLPImpl {
 					if (i < nameSpan.getEnd() - 1)
 						name += " ";
 				}
-				jsonEntity.put(name);
+				entities.add(name);
 			}
 
-			return jsonEntity;
+			return entities;
 		} else {
 			logger.debug("Sentences returns null of OpenNLP Entity " + entityPath);
 			return null;
