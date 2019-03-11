@@ -95,8 +95,8 @@ public class TurSpaCyConnector implements TurNLPImpl {
 				for (Object attrValue : attributes.values()) {
 					JSONObject jsonBody = new JSONObject();
 					String atributeValue = removeUrl(turSolrField.convertFieldToString(attrValue))
-							.replaceAll("\\n|:|;", ". ").replaceAll("(^\\h*)|(\\h*$)|\\r|\\n|\"|\'|R\\$", " ")
-							.replaceAll("”", " ").replaceAll("“", " ").replaceAll("\\.+", ". ").replaceAll(" +", " ");
+							.replaceAll("\\n|:|;", ". ").replaceAll("\\h|\\r|\\n|\"|\'|R\\$", " ")
+							.replaceAll("”", " ").replaceAll("“", " ").replaceAll("\\.+", ". ").replaceAll(" +", " ").trim();
 
 					jsonBody.put("text", atributeValue);
 
@@ -197,11 +197,11 @@ public class TurSpaCyConnector implements TurNLPImpl {
 	private void handleEntity(String entityType, String entity) {
 		if (entityList.containsKey(entityType)) {
 			if (!entityList.get(entityType).contains(entity) && entity.trim().length() > 1) {
-				entityList.get(entityType).add(entity);
+				entityList.get(entityType).add(entity.trim());
 			}
 		} else {
 			List<Object> valueList = new ArrayList<Object>();
-			valueList.add(entity);
+			valueList.add(entity.trim());
 			entityList.put(entityType, valueList);
 		}
 
