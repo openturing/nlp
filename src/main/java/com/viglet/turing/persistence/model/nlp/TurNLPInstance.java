@@ -52,13 +52,13 @@ public class TurNLPInstance implements Serializable {
 	@Column(nullable = false)
 	private int enabled;
 
-	@Column(nullable = false, length = 255)
+	@Column(length = 255)
 	private String host;
 
 	@Column(nullable = false, length = 5)
 	private String language;
 
-	@Column(nullable = false)
+	@Column
 	private int port;
 
 	// bi-directional many-to-one association to TurNLPVendor

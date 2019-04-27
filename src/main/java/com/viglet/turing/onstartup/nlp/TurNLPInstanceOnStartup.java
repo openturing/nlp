@@ -54,7 +54,7 @@ public class TurNLPInstanceOnStartup {
 				turNLPInstance.setTitle("OpenNLP English");
 				turNLPInstance.setDescription("OpenNLP Production - English");
 				turNLPInstance.setTurNLPVendor(turNLPVendorOpenNLP);
-				turNLPInstance.setHost("");
+				turNLPInstance.setHost("localhost");
 				turNLPInstance.setPort(0);
 				turNLPInstance.setLanguage(TurLocaleRepository.EN_US);
 				turNLPInstance.setEnabled(1);
@@ -69,7 +69,7 @@ public class TurNLPInstanceOnStartup {
 				turNLPInstance.setTitle("OpenNLP Portuguese");
 				turNLPInstance.setDescription("OpenNLP Production - Portuguese");
 				turNLPInstance.setTurNLPVendor(turNLPVendorOpenNLP);
-				turNLPInstance.setHost("");
+				turNLPInstance.setHost("localhost");
 				turNLPInstance.setPort(0);
 				turNLPInstance.setLanguage(TurLocaleRepository.PT_BR);
 				turNLPInstance.setEnabled(1);
